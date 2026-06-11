@@ -1,0 +1,54 @@
+# Pattern 3: Template a service config (nginx, supervisord, systemd, ...)
+# with per-worktree variables
+#
+# Why: hardcoding ports in config files means either (a) one worktree edits
+# the file and breaks the others, or (b) the file is templated and rendered
+# per-worktree. The second option is what we want.
+#
+# Two key rules for templating that don't blow up:
+#   1. Use a placeholder syntax that doesn't collide with the target file's
+#      own variable syntax (nginx has $host, $scheme, $remote_addr; systemd
+#      has %i, %n, etc.). We use {{NAME}} (mustache) — it's inert everywhere.
+#   2. Use an explicit whitelist of substitutions, not bare `$VAR` envsubst.
+#      envsubst would also expand $host, $remote_addr, etc. inside the
+#      template body and break the rendered config.
+#
+# Below: a generic Python helper. The shell entry point in
+# references/implementations/deerflow-style has a worked example.
+
+import os
+import sys
+import pathlib
+
+
+def render_template(template_path: str, output_path: str, subs: dict[str, str]) -> None:
+    """Substitute {{KEY}} placeholders in template_path with subs[KEY].
+    Whitelist is explicit (the keys passed in), so any other $foo
+    syntax in the template body is left alone.
+
+    Args:
+        template_path: source file with {{KEY}} placeholders.
+        output_path: rendered output path.
+        subs: dict of placeholder → value. Only these keys are substituted.
+    """
+    src = pathlib.Path(template_path).read_text()
+    # Substitute longest names first to avoid partial matches (e.g. so
+    # {{NGINX_PORT}} isn't half-matched against {{N}}.
+    for key in sorted(subs, key=len, reverse=True):
+        src = src.replace("{{" + key + "}}", subs[key])
+    pathlib.Path(output_path).write_text(src)
+
+
+def main() -> int:
+    if len(sys.argv) < 3:
+        print("usage: render_template.py TEMPLATE OUTPUT KEY=VAL [KEY=VAL ...]")
+        return 2
+    tpl, out = sys.argv[1], sys.argv[2]
+    subs = dict(arg.split("=", 1) for arg in sys.argv[3:])
+    render_template(tpl, out, subs)
+    print(f"wrote {out}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

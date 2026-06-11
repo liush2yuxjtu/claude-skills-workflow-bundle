@@ -1,0 +1,23 @@
+{
+  "skill_name": "worktree-qa",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I just finished a feature branch with 3 new pages and 2 API changes. QA this worktree for me — I want to see everything tested and then play with it myself.",
+      "expected_output": "Should run all 4 phases: diff inventory listing 5 changes, launch stack via worktree-self-host, test all 5 features via playwright-cli, generate report, and open Chrome for manual testing.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "smoke test the worktree — just make sure nothing's broken and let me try it",
+      "expected_output": "Should run a lighter version: diff summary, host the stack, smoke-test core flows (not exhaustive), open Chrome. Should still produce a report but with fewer test cases.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "I've got a worktree with only backend API changes (no frontend). Run the full QA loop on it.",
+      "expected_output": "Should detect no frontend, use curl-based testing instead of playwright-cli for API endpoints, still generate a report, and note that browser handoff is skipped or points to API docs.",
+      "files": []
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "skill_name": "submit-mr",
+  "evals": [
+    {
+      "id": 1,
+      "name": "happy-path-winchannel-internal",
+      "prompt": "我在 worktree-mighty-discovering-falcon 这条分支上,刚刚 commit 完 graph-plane v2 的重构 (HEAD f49a43c4),pre-mr 4 段都已经通过,.agent/pr-assets/MR_BODY.md 也写好了。帮我把这条分支推到 origin 然后在 win_brain(datascience/win_ontology/win_brain)上开一个 MR,target 是 main。GitLab 是公司内网 gitlab008.its.winchannel.net。",
+      "expected_output": "用 /submit-mr 一条龙走完 8 步;Phase 6 协议探活应该探到 HTTPS EOF → 退到 HTTP;最终输出 MR_IID + MR_WEB_URL + 4 段 gate 表 + 用户后续 1-2 步;不 echo 真实 $GITLAB_TOKEN;不打印 diff 全文;留产物到 .agent/pr-assets/。",
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "dirty-worktree-refuse",
+      "prompt": "ship it, push my branch and open the MR. (注:当前 worktree 有未 commit 的修改,git status 会列出 3 个 modified 文件)",
+      "expected_output": "skill 在 Phase 1 worktree probe 检测到 dirty,**立即停**,提示先 commit;**不**进入 Phase 2 /pre-mr,**不**尝试 push,**不**调创建 MR API;输出的 message 要指明哪些文件是 dirty,并建议下一步。",
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "behind-main-auto-rebase",
+      "prompt": "把我这条分支提个 MR 上去吧。我自己看到 git log 有 main 上新来了 2 个 commit 而我还没拉过,但 origin 上同名分支早被我之前 push 过一次旧版。",
+      "expected_output": "Phase 3 应该 `git fetch` + 探测 behind > 0,**默认 rebase**(不报告 behind 就停);rebase 干净后进 Phase 5,push 用 `--force-with-lease`(不能用 `--force`);若 push 被 reject 因为远端中间被改了,回 Phase 3 再 rebase 一次,最多重试 1 轮。",
+      "files": []
+    },
+    {
+      "id": 4,
+      "name": "https-only-protocol-path",
+      "prompt": "把当前分支推上去开 MR,git remote 指向 git@gitlab.com:my-team/my-repo.git(注:这是公网 gitlab.com,HTTPS 直接通)。",
+      "expected_output": "Phase 6 应该探到 HTTPS=200 → 直接走 §7a 路径用 glab mr create(或 HTTP API HTTPS scheme);**不**降级到 HTTP / OAuth;输出 web_url 指向 https://gitlab.com/...,而不是 http://...",
+      "files": []
+    },
+    {
+      "id": 5,
+      "name": "low-zh-ratio-auto-pad",
+      "prompt": "帮我把这条 feature/lighthouse-refactor 分支提 MR。MR body 我已经写了一份,在 .agent/pr-assets/MR_BODY.md 里,内容主要是英文,zh-CN 字符占比大概 0.21 左右。",
+      "expected_output": "Phase 4 检测到 ratio < 0.30 安全垫,**默认动手补**:加 1 段中文设计要点 + 1 个 mermaid 拓扑图,把比例顶到 ≥ 0.30 再进 Phase 5;**不**直接交付贴线版本;同时把这次的补法在最终输出里告知用户。",
+      "files": []
+    }
+  ]
+}

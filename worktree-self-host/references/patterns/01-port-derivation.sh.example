@@ -1,0 +1,57 @@
+# Pattern 1: Derive a per-worktree port triple deterministically
+#
+# Why: every worktree of the same repo defaults to the same ports, so launching
+# more than one collides. We need a function that:
+#   (a) gives every worktree a UNIQUE port triple
+#   (b) is DETERMINISTIC (same worktree → same ports across machines / restarts)
+#   (c) doesn't require per-worktree hand-config
+#
+# Two strategies, choose based on the project:
+#
+# Strategy A: hash the worktree directory name
+#   Good for repos with 1-1000 worktrees where directory names are stable.
+#   Use FNV-1a (32-bit) in pure bash or python — same output across macOS/Linux.
+
+# Pure bash FNV-1a (no python startup):
+fnv1a_32() {
+    local str="$1"
+    # Convert to bytes via printf, then iterate
+    local -i h=2166136261  # FNV offset basis (0x811C9DC5)
+    local -i i
+    for ((i = 0; i < ${#str}; i++)); do
+        h=$(( (h ^ $(printf '%d' "'${str:i:1}")) * 16777619 & 0xFFFFFFFF ))
+    done
+    echo "$h"
+}
+
+# Hash the worktree directory name, then map to a port range
+WT_NAME=$(basename "$REPO_ROOT")
+H=$(fnv1a_32 "$WT_NAME")
+GATEWAY_PORT=$(( 8000 + (H % 1000) ))
+FRONTEND_PORT=$(( 3000 + ((H * 7 % 1000)) ))
+NGINX_PORT=$(( 8000 + ((H * 13 % 1000)) ))
+
+# Strategy B: ask the user (one-line, used for small/known worktree sets)
+#   Worktrees named "main", "develop", "feature-x" can get hand-pinned ports via
+#   a project-level config file (e.g. `.worktree-ports.json`). Simpler, but
+#   doesn't scale to 30+ worktrees.
+
+# Always: walk +1 from the derived base until the port is free. This is
+# cheap defensive insurance against process-level races (TOCTOU between
+# "is the port free" and "actually bind to it"). Cap at 50 steps.
+
+walk_to_free() {
+    local base=$1
+    local candidate=$base
+    local i=0
+    while [ "$i" -lt 50 ] && [ "$candidate" -le 65535 ]; do
+        if ! lsof -nP -iTCP:"$candidate" -sTCP:LISTEN -t >/dev/null 2>&1; then
+            echo "$candidate"
+            return 0
+        fi
+        candidate=$((candidate + 1))
+        i=$((i + 1))
+    done
+    echo "$base"  # fall back; better to collide loudly than fail
+    return 0
+}

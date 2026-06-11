@@ -1,0 +1,86 @@
+# Pattern 4: Load .env files safely (avoid `set -a; source .env` for unquoted passwords)
+#
+# Why: `set -a; source .env; set +a` is the standard bash way to load .env,
+# but it parses each line as shell syntax. If a password contains `(`, `)`,
+# `!`, `$`, or backticks, the parse fails:
+#
+#     DATABASE_URL=postgresql://u:p(hS@host  # bash: "syntax error near unexpected token `('"
+#
+# We need a parser that handles unquoted values with shell metachars. The
+# key is to NEVER let the value pass through the shell — we read it in
+# Python and emit `export KEY='value'` with single-quote escaping, then
+# `eval` that on the consumer side. The single-quoted form prevents the
+# shell from re-interpreting $() / ` ` / ! / etc. inside the value.
+
+import os
+import sys
+from typing import Optional, Tuple
+
+
+def parse_line(line: str) -> Optional[Tuple[str, str]]:
+    """Return (key, value) for a valid KEY=VALUE line, else None.
+
+    Order of operations:
+    1. Strip an inline trailing comment first (so `KEY="value" # comment`
+       is treated as a quoted value of `"value"`, not as the literal string
+       `"value" # comment`).
+    2. Then strip surrounding quotes if both ends match the same quote.
+    """
+    raw = line.rstrip("\n").rstrip("\r")
+    stripped = raw.strip()
+    if not stripped or stripped.startswith("#"):
+        return None
+    if stripped.startswith("export "):
+        stripped = stripped[len("export "):].lstrip()
+    if "=" not in stripped:
+        return None
+    key, _, value = stripped.partition("=")
+    key = key.strip()
+    value = value.lstrip()
+    if not key or not all(c.isalnum() or c == "_" for c in key):
+        return None
+    # Strip a trailing inline comment BEFORE checking surrounding quotes —
+    # otherwise the trailing comment would make value[-1] a non-quote char
+    # and the quote-strip would skip.
+    if " #" in value:
+        value = value.split(" #", 1)[0].rstrip()
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in ("'", '"'):
+        value = value[1:-1]
+    return key, value
+
+
+def shell_escape(value: str) -> str:
+    """Wrap value in single quotes; escape embedded single quotes via
+    the standard POSIX trick: end the single-quoted string, insert a
+    double-quoted single-quote, restart the single-quoted string.
+    """
+    return "'" + value.replace("'", "'\"'\"'") + "'"
+
+
+def main() -> int:
+    if len(sys.argv) < 2:
+        print("usage: load_env.py FILE [FILE ...]", file=sys.stderr)
+        return 2
+    seen: dict[str, str] = {}
+    for path in sys.argv[1:]:
+        if not os.path.isfile(path):
+            continue
+        with open(path, "r", encoding="utf-8", errors="replace") as f:
+            for lineno, line in enumerate(f, 1):
+                try:
+                    parsed = parse_line(line)
+                except Exception as exc:
+                    print(f"# load_env.py: skipped {path}:{lineno}: {exc}",
+                          file=sys.stderr)
+                    continue
+                if parsed is None:
+                    continue
+                key, value = parsed
+                seen[key] = value  # later file wins
+    for key, value in seen.items():
+        print(f"export {key}={shell_escape(value)}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

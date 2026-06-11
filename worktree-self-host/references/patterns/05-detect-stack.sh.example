@@ -1,0 +1,61 @@
+# Pattern 5: Detect the project's stack before generating a per-worktree launcher
+#
+# Why: the launcher must be tailored to the project's actual services. A
+# monorepo with FastAPI + Next.js + nginx is different from a single-binary
+# Go service + nginx, which is different from a Rails app + sidekiq +
+# postgres. Detect the stack first, then decide what to launch.
+
+detect_project_stack() {
+    local repo="$1"
+    local detected=""
+
+    # Backend
+    [ -f "$repo/backend/pyproject.toml" ] || [ -f "$repo/backend/uv.lock" ] \
+        && detected="${detected}python-backend,"
+    [ -f "$repo/backend/package.json" ] \
+        && detected="${detected}node-backend,"
+    [ -f "$repo/go.mod" ] \
+        && detected="${detected}go-backend,"
+    [ -f "$repo/Cargo.toml" ] \
+        && detected="${detected}rust-backend,"
+
+    # Frontend
+    [ -d "$repo/frontend" ] && [ -f "$repo/frontend/package.json" ] \
+        && detected="${detected}node-frontend,"
+    [ -d "$repo/web" ] && [ -f "$repo/web/package.json" ] \
+        && detected="${detected}node-frontend-web,"
+
+    # Databases / sidecars
+    [ -f "$repo/docker-compose.yml" ] || [ -f "$repo/docker-compose.yaml" ] \
+        && detected="${detected}docker-compose,"
+    [ -f "$repo/backend/prisma/schema.prisma" ] \
+        && detected="${detected}prisma,"
+    [ -d "$repo/backend/alembic" ] \
+        && detected="${detected}alembic,"
+
+    # Reverse proxy
+    [ -d "$repo/docker/nginx" ] || [ -d "$repo/nginx" ] || [ -d "$repo/proxy" ] \
+        && detected="${detected}nginx-config-present,"
+
+    # Database backend (read config.yaml / pyproject / .env)
+    local db_backend=""
+    if [ -f "$repo/config.yaml" ]; then
+        db_backend=$(grep -A2 "^database:" "$repo/config.yaml" 2>/dev/null \
+            | grep "backend:" | head -1 | awk '{print $2}' | tr -d '"' || true)
+    fi
+    [ -n "$db_backend" ] && detected="${detected}db:${db_backend},"
+
+    # Strip trailing comma, print
+    detected="${detected%,}"
+    echo "$detected"
+}
+
+# Once detected, the launcher should:
+#   1. Use the matching install/run pattern (uv for python, pnpm for node, etc.)
+#   2. Skip services that don't exist (don't try to start a frontend if there
+#      isn't one)
+#   3. Adapt the nginx template to the actual upstream services detected
+#
+# For the per-worktree port scheme, all backends share a single gateway
+# port; all frontends share a frontend port. If there are multiple
+# backends, allocate a port per service rather than a triple per stack.

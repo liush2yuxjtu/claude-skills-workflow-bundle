@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>工序四章 · claude-skills-workflow-bundle</title>
+  <meta name="description" content="一套为 Claude Code 装配的 4 把工序小刀:worktree → qa → pre-mr → submit-mr" />
+  <meta name="author" content="Liu Shiyu" />
+  <meta property="og:title" content="工序四章 · claude-skills-workflow-bundle" />
+  <meta property="og:description" content="四把工序小刀,把分支从 commit 削到 merge。面向中文 Claude Code 用户。" />
+  <meta property="og:type" content="website" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Noto+Serif+SC:wght@400;500;700;900&family=ZCOOL+XiaoWei&display=swap"
+  />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- 背景层:墨格 + 噪点 -->
+  <div class="grid-bg" aria-hidden="true"></div>
+  <div class="grain" aria-hidden="true"></div>
+  <div class="vignette" aria-hidden="true"></div>
+
+  <!-- 顶部状态条 -->
+  <header class="topbar">
+    <div class="topbar-l">
+      <span class="dot" aria-hidden="true"></span>
+      <span class="mono topbar-id">claude-skills-workflow-bundle</span>
+    </div>
+    <nav class="topbar-c mono" aria-label="流水线">
+      <span>worktree</span><i>→</i><span>qa</span><i>→</i><span>pre-mr</span><i>→</i><span>submit-mr</span>
+    </nav>
+    <div class="topbar-r mono">
+      <span class="tag">v1.0.0</span>
+      <span class="tag tag-mit">MIT</span>
+    </div>
+  </header>
+
+  <!-- 主舞台 -->
+  <section class="hero">
+    <div class="hero-meta mono">
+      <div><span class="k">面向</span><span class="v">Claude Code 用户</span></div>
+      <div><span class="k">语言</span><span class="v">简体中文</span></div>
+      <div><span class="k">版本</span><span class="v">工序四章 · 第一版</span></div>
+    </div>
+
+    <h1 class="hero-title" aria-label="工序四章">
+      <span class="cn">工</span>
+      <span class="cn">序</span>
+      <span class="cn">四</span>
+      <span class="cn">章</span>
+    </h1>
+
+    <p class="hero-sub">
+      四把工序小刀,把分支从 <em>commit</em> 削到 <em>merge</em>。<br />
+      自 <span class="hl">worktree</span> 始,至 <span class="hl">merge</span> 终,一气呵成。
+    </p>
+
+    <p class="hero-flow mono" aria-hidden="true">
+      <span>git worktree</span><i>→</i><span>qa loop</span><i>→</i><span>4-gate</span><i>→</i><span>gitlab mr</span>
+    </p>
+
+    <aside class="hero-vert mono" aria-hidden="true">
+      <span>修枝 · 验身 · 净身 · 远行</span>
+    </aside>
+
+    <div class="hero-seal" id="seal" aria-label="工序四章 印章">
+      <svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
+        <rect class="seal-box" x="2" y="2" width="96" height="96" rx="2" />
+        <rect class="seal-inner" x="6" y="6" width="88" height="88" rx="1" fill="none" />
+        <text class="seal-txt" x="50" y="40" text-anchor="middle" dominant-baseline="middle">工序</text>
+        <text class="seal-txt" x="50" y="68" text-anchor="middle" dominant-baseline="middle">四章</text>
+        <line class="seal-sep" x1="10" y1="50" x2="90" y2="50" />
+      </svg>
+    </div>
+
+    <a class="hero-cta mono" href="#install">
+      <span>装入 ~/.claude/skills/</span>
+      <span class="cta-arrow">→</span>
+    </a>
+
+    <div class="hero-scroll mono" aria-hidden="true">
+      <span>↓ 向下展开</span>
+    </div>
+  </section>
+
+  <!-- 壹 · 序 -->
+  <section class="sec sec-intro" id="intro">
+    <div class="sec-bg mono" aria-hidden="true">壹 · 序</div>
+    <div class="sec-body">
+      <span class="sec-num mono">壹</span>
+      <h2 class="sec-title">何为「工序四章」</h2>
+      <p class="sec-lede">
+        一套为 Claude Code 装配的 <b>四把工序小刀</b>,首尾相连,各司其职。
+        从打开 <span class="hl">worktree</span>,到本地 <span class="hl">QA</span>,到 MR 提交前的
+        <span class="hl">四段自检</span>,到 rebase + push + 开 MR,全程不脱手。
+      </p>
+      <ul class="sec-list">
+        <li>
+          <b class="mono">worktree-self-host</b>
+          <span>让每个 worktree 都有自己的端口,push 之前就位</span>
+        </li>
+        <li>
+          <b class="mono">worktree-qa</b>
+          <span>diff → host → playwright,四相 QA 一气呵成</span>
+        </li>
+        <li>
+          <b class="mono">pre-mr</b>
+          <span>4 段式自检,默认就地修,不写遗留</span>
+        </li>
+        <li>
+          <b class="mono">submit-mr</b>
+          <span>rebase + push + GitLab MR,OAuth 探活兜底</span>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 贰 · 谱 -->
+  <section class="sec sec-pipeline" id="pipeline">
+    <div class="sec-bg mono" aria-hidden="true">贰 · 谱</div>
+    <div class="sec-body">
+      <span class="sec-num mono">贰</span>
+      <h2 class="sec-title">工尺四谱</h2>
+      <p class="sec-lede">
+        借「工尺谱」之名,把流水线画成一首四拍的短曲。<br />
+        每拍一调,每调一工,不抢不宕。
+      </p>
+      <div class="score" role="list">
+        <div class="beat" role="listitem">
+          <div class="beat-mark">工</div>
+          <div class="beat-name mono">worktree-self-host</div>
+          <div class="beat-zh">起调 · 端口独占</div>
+          <div class="beat-note mono">「一树一枝,一worktree一端口」</div>
+        </div>
+        <i class="beat-arrow" aria-hidden="true">→</i>
+        <div class="beat" role="listitem">
+          <div class="beat-mark">尺</div>
+          <div class="beat-name mono">worktree-qa</div>
+          <div class="beat-zh">铺排 · 端到端</div>
+          <div class="beat-note mono">「旧迹新痕,playwright 一并验」</div>
+        </div>
+        <i class="beat-arrow" aria-hidden="true">→</i>
+        <div class="beat" role="listitem">
+          <div class="beat-mark">上</div>
+          <div class="beat-name mono">pre-mr</div>
+          <div class="beat-zh">把关 · 四门净</div>
+          <div class="beat-note mono">「QA / e2e / diff / 视觉证据」</div>
+        </div>
+        <i class="beat-arrow" aria-hidden="true">→</i>
+        <div class="beat" role="listitem">
+          <div class="beat-mark">尺</div>
+          <div class="beat-name mono">submit-mr</div>
+          <div class="beat-zh">收束 · 远行</div>
+          <div class="beat-note mono">「rebase + push + MR 三连」</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 叁 · 刀 -->
+  <section class="sec sec-skills" id="skills">
+    <div class="sec-bg mono" aria-hidden="true">叁 · 刀</div>
+    <div class="sec-body">
+      <span class="sec-num mono">叁</span>
+      <h2 class="sec-title">四把刀,各擅其能</h2>
+      <p class="sec-lede">展开看,每把刀的形制、发力点、收招式。</p>
+      <div class="skill-grid">
+        <article class="skill" data-skill="worktree-self-host">
+          <div class="skill-head">
+            <span class="skill-no mono">01 · 起</span>
+            <span class="skill-tag mono">meta</span>
+          </div>
+          <h4 class="skill-name mono">worktree-self-host</h4>
+          <p class="skill-zh">自托管</p>
+          <p class="skill-desc">
+            为每个 worktree 生成端口隔离的 dev launcher:FNV-1a 派生端口、scoped pidfile 优雅停机、stack 自动嗅探(FastAPI / Next.js / Go / Rails / Rust),首次调用时用 <span class="mono inline">skill-creator</span> 现编一份。
+          </p>
+          <div class="skill-trig">
+            <span class="mono">/worktree-self-host</span>
+            <span class="mono">launch this worktree</span>
+            <span class="mono">per-worktree ports</span>
+          </div>
+          <pre class="skill-code mono"><code><span class="com"># 启动本 worktree 的 dev stack</span>
+<span class="kw">worktree-self-host</span> up
+<span class="com"># → backend :7801  frontend :3501  pg :5433</span></code></pre>
+        </article>
+
+        <article class="skill" data-skill="worktree-qa">
+          <div class="skill-head">
+            <span class="skill-no mono">02 · 验</span>
+            <span class="skill-tag mono">e2e</span>
+          </div>
+          <h4 class="skill-name mono">worktree-qa</h4>
+          <p class="skill-zh">四相 QA</p>
+          <p class="skill-desc">
+            <span class="mono inline">git diff</span> 列举新旧特性 → 调起 <span class="mono inline">worktree-self-host</span> 拉起 dev stack → 用 <span class="mono inline">playwright-cli</span> 逐个点过 → 把 app 弹到 Chrome 让你手测签字。
+          </p>
+          <div class="skill-trig">
+            <span class="mono">/worktree-qa</span>
+            <span class="mono">QA this worktree</span>
+            <span class="mono">smoke test the worktree</span>
+          </div>
+          <pre class="skill-code mono"><code><span class="com"># 自动发现的 feature 列表</span>
+git diff main..HEAD --stat
+<span class="com"># → 8 files, +312 -94</span>
+playwright run --features all</code></pre>
+        </article>
+
+        <article class="skill" data-skill="pre-mr">
+          <div class="skill-head">
+            <span class="skill-no mono">03 · 净</span>
+            <span class="skill-tag mono">4-gate</span>
+          </div>
+          <h4 class="skill-name mono">pre-mr</h4>
+          <p class="skill-zh">四段自检</p>
+          <p class="skill-desc">
+            <b>QA</b> · <b>e2e</b> · <b>diff</b> · <b>视觉证据</b>,四扇门一道一道过。默认行为是 <em>动手修</em>,不写 follow-up MR,撞模糊才升用户。
+          </p>
+          <div class="skill-trig">
+            <span class="mono">/pre-mr</span>
+            <span class="mono">准备 MR</span>
+            <span class="mono">开 MR 前</span>
+            <span class="mono">ship MR</span>
+          </div>
+          <pre class="skill-code mono"><code>gate 1 · qa pass      ✓
+gate 2 · e2e green    ✓
+gate 3 · diff clean   ✓
+gate 4 · evidence ok  ✓  → ready to push</code></pre>
+        </article>
+
+        <article class="skill" data-skill="submit-mr">
+          <div class="skill-head">
+            <span class="skill-no mono">04 · 行</span>
+            <span class="skill-tag mono">gitlab</span>
+          </div>
+          <h4 class="skill-name mono">submit-mr</h4>
+          <p class="skill-zh">最后一公里</p>
+          <p class="skill-desc">
+            worktree 探测 → 委托 <span class="mono inline">/pre-mr</span> → fetch + rebase → zh-CN / 视觉证据补齐(≥ 0.30 安全垫)→ <span class="mono inline">push --force-with-lease</span> → GitLab 三段协议探活 → 创建 MR。
+          </p>
+          <div class="skill-trig">
+            <span class="mono">/submit-mr</span>
+            <span class="mono">提个 MR</span>
+            <span class="mono">open the MR</span>
+            <span class="mono">ship it</span>
+          </div>
+          <pre class="skill-code mono"><code>probe  · https://gitlab/...  EOF ✗
+        http://gitlab/...   200 ✓  (fallback)
+push    · --force-with-lease
+mr      · web_url  ✓  ready</code></pre>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- 肆 · 装 -->
+  <section class="sec sec-install" id="install">
+    <div class="sec-bg mono" aria-hidden="true">肆 · 装</div>
+    <div class="sec-body">
+      <span class="sec-num mono">肆</span>
+      <h2 class="sec-title">装入 <span class="mono inline">~/.claude/skills/</span></h2>
+      <p class="sec-lede">一行 git clone,四个 cp,落地即用。</p>
+      <div class="install-block">
+        <button class="copy-btn mono" data-copy aria-label="复制安装命令">copy</button>
+<pre class="mono"><code><span class="com"># 1. 拉仓库</span>
+git clone https://github.com/liush2yuxjtu/claude-skills-workflow-bundle.git
+cd claude-skills-workflow-bundle
+
+<span class="com"># 2. 四个技能拷进 Claude Code 的 skills 目录</span>
+cp -R worktree-self-host worktree-qa pre-mr submit-mr ~/.claude/skills/
+
+<span class="com"># 3. 重启 Claude Code,4 个技能即可在合适的语境下自动触发</span></code></pre>
+      </div>
+      <p class="install-hint">
+        装完后,只要在 Claude Code 里说 <span class="mono inline">/worktree-qa</span>、<span class="mono inline">/pre-mr</span>、<span class="mono inline">/submit-mr</span> 任意一句,就会按本仓库里的 SKILL.md 跑起来。
+      </p>
+    </div>
+  </section>
+
+  <!-- 伍 · 验 -->
+  <section class="sec sec-verify">
+    <div class="sec-bg mono" aria-hidden="true">伍 · 验</div>
+    <div class="sec-body">
+      <span class="sec-num mono">伍</span>
+      <h2 class="sec-title">出自此书</h2>
+      <p class="sec-lede">薄薄一册,字字皆工。</p>
+      <div class="verify-grid">
+        <div>
+          <div class="verify-num">19</div>
+          <div class="verify-label mono">源文件</div>
+        </div>
+        <div>
+          <div class="verify-num">132<span class="unit">KB</span></div>
+          <div class="verify-label mono">代码体积</div>
+        </div>
+        <div>
+          <div class="verify-num">4</div>
+          <div class="verify-label mono">独立技能</div>
+        </div>
+        <div>
+          <div class="verify-num">0</div>
+          <div class="verify-label mono">外部依赖</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 页脚 -->
+  <footer class="footer">
+    <div class="foot-l mono">
+      <span>工序四章</span>
+      <i>·</i>
+      <span>claude-skills-workflow-bundle</span>
+    </div>
+    <div class="foot-c">本页以「墨格」美学呈现</div>
+    <div class="foot-r mono">
+      <a href="https://github.com/liush2yuxjtu/claude-skills-workflow-bundle" rel="noopener" target="_blank">github ↗</a>
+      <i>·</i>
+      <span>MIT</span>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

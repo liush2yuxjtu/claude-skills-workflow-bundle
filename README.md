@@ -1,7 +1,7 @@
 # claude-skills-workflow-bundle
 
-A bundled drop-in of four Claude Code skills that wire together the
-**worktree → QA → MR** pipeline for any project. Each skill is a
+A bundled drop-in of five Claude Code skills for browser UAT and the
+**worktree → QA → MR** pipeline. Each skill is a
 self-contained folder with its own `SKILL.md` (Claude Code reads that
 file's YAML frontmatter `description` to decide when to trigger the
 skill).
@@ -10,6 +10,7 @@ skill).
 
 ```
 .
+├── agent-webapp-testing/  # live Agent UAT + WebM evidence
 ├── worktree-self-host/    # scaffold a per-worktree dev launcher (port-isolated)
 ├── worktree-qa/           # diff → host → playwright-test → handoff
 ├── pre-mr/                # 4-gate pre-MR self-check (QA / e2e / diff / visual-evidence)
@@ -32,6 +33,10 @@ submit-mr            ← rebase + force-push + GitLab MR (HTTPS → HTTP → OAu
 ```
 
 ## The skills
+
+### `agent-webapp-testing`
+Tests live Agent state transitions with smart selectors, durable checkpoints,
+and unedited Playwright WebM evidence for pass and failure.
 
 ### `worktree-self-host`
 Run any project's dev stack on a per-worktree port triple so multiple
@@ -71,7 +76,7 @@ Triggers on `/submit-mr`, "提个 MR", "push 我这条分支", "open the MR",
 
 ```bash
 git clone https://github.com/liush2yuxjtu/claude-skills-workflow-bundle.git
-cp -R claude-skills-workflow-bundle/{worktree-self-host,worktree-qa,pre-mr,submit-mr} \
+cp -R claude-skills-workflow-bundle/{agent-webapp-testing,worktree-self-host,worktree-qa,pre-mr,submit-mr} \
       ~/.claude/skills/
 ```
 

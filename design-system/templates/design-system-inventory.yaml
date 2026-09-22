@@ -1,0 +1,33 @@
+system:
+  name: ""
+  purpose: ""
+
+intent:
+  users: []
+  goals: []
+  constraints: []
+
+screens:
+  - id: ""
+    purpose: ""
+    states: []
+
+flows:
+  - name: ""
+    screens: []
+
+components:
+  - name: ""
+    variants: []
+    states: []
+    tokens: []
+
+vfx:
+  - skill: ""
+    trigger: ""
+    lifecycle: []
+    assets: []
+
+validation:
+  snapshots: []
+  runtime_evidence: []
